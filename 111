@@ -1,0 +1,76 @@
+-- ================================================
+-- ESP (มองเห็นผู้เล่น) & Hitbox Expander Script
+-- ================================================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- [ตั้งค่าระบบ]
+local Settings = {
+    ESP_Enabled = true,
+    ESP_Color = Color3.fromRGB(255, 0, 0), -- สีขอบมองเห็น (แดง)
+    
+    Hitbox_Enabled = true,
+    Hitbox_Size = Vector3.new(10, 10, 10), -- ขนาด Hitbox (กว้าง, สูง, ยาว)
+    Hitbox_Transparency = 0.6 -- ความโปร่งใสของ Hitbox (0 = ทึบ, 1 = ล่องหน)
+}
+
+-- ฟังก์ชันจัดการผู้เล่นแต่ละคน
+local function ApplyFeatures(player)
+    if player == LocalPlayer then return end
+
+    player.CharacterAdded:Connect(function(character)
+        local hrp = character:WaitForChild("HumanoidRootPart", 5)
+        if not hrp then return end
+
+        -- 1. ระบบมองเห็นผู้เล่น (ESP Highlight)
+        if Settings.ESP_Enabled then
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "ESP_Highlight"
+            highlight.FillColor = Settings.ESP_Color
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.Adornee = character
+            highlight.Parent = character
+        end
+
+        -- 2. ระบบขยาย Hitbox (Hitbox Expander)
+        if Settings.Hitbox_Enabled then
+            hrp.Size = Settings.Hitbox_Size
+            hrp.Transparency = Settings.Hitbox_Transparency
+            hrp.Color = Color3.fromRGB(255, 0, 0)
+            hrp.Material = Enum.Material.ForceField
+            hrp.CanCollide = false
+        end
+    end)
+end
+
+-- ประมวลผลผู้เล่นทุกคนในเซิร์ฟเวอร์
+for _, player in pairs(Players:GetPlayers()) do
+    ApplyFeatures(player)
+    if player.Character then
+        -- กรณีตัวละครเกิดอยู่แล้ว
+        task.spawn(function()
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if hrp and Settings.Hitbox_Enabled and player ~= LocalPlayer then
+                hrp.Size = Settings.Hitbox_Size
+                hrp.Transparency = Settings.Hitbox_Transparency
+                hrp.Color = Color3.fromRGB(255, 0, 0)
+                hrp.Material = Enum.Material.ForceField
+                hrp.CanCollide = false
+            end
+            
+            if Settings.ESP_Enabled and player ~= LocalPlayer and not player.Character:FindFirstChild("ESP_Highlight") then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESP_Highlight"
+                highlight.FillColor = Settings.ESP_Color
+                highlight.Adornee = player.Character
+                highlight.Parent = player.Character
+            end
+        end)
+    end
+end
+
+-- ดักจับเมื่อมีผู้เล่นใหม่เข้ามา
+Players.PlayerAdded:Connect(ApplyFeatures)
